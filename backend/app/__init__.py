@@ -3,14 +3,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS  # Import CORS
+from flask_socketio import SocketIO  # Import SocketIO
 
-from backend.config import DevelopmentConfig
+from app.config import DevelopmentConfig
 from sqlalchemy.exc import OperationalError
 import logging
 
 # Initialize SQLAlchemy
 db = SQLAlchemy()
 jwt = JWTManager()
+socketio = SocketIO()  # Initialize SocketIO
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,11 +41,11 @@ def init_db(app):
 
 def register_blueprints(app):
     try:
-        from backend.routes.auth import auth_bp
-        from backend.routes.service import service_bp
-        from backend.routes.incident import incident_bp
-        from backend.routes.status import status_bp
-        # from backend.routes.organization import organization_bp
+        from app.routes.auth import auth_bp
+        from app.routes.service import service_bp
+        from app.routes.incident import incident_bp
+        from app.routes.status import status_bp
+        # from app.routes.organization import organization_bp
 
         app.register_blueprint(auth_bp)
         app.register_blueprint(service_bp)
@@ -59,7 +62,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
 
-    from backend.models import User, Role
+    from app.models import User, Role
     datastore = SQLAlchemyUserDatastore(db, User, Role)
     app.security = Security(app, datastore=datastore, register_blueprint=False) # Registering predefined blueprint is disabled
 
@@ -67,6 +70,10 @@ def create_app():
     # Initialize database with error handling
     init_db(app)
     jwt.init_app(app)
+    socketio.init_app(app)  # Initialize SocketIO with app
+
+    # Enable CORS
+    CORS(app)
 
     # Register blueprints
     register_blueprints(app)
@@ -74,4 +81,3 @@ def create_app():
     logger.info("App created successfully")
     
     return app
-

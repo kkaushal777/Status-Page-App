@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from flask_security import UserMixin, RoleMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
-from backend import db
+from . import db
 
 # Service and Incident Status Constants
 SERVICE_STATUSES = ['Operational', 'Degraded', 'Outage']

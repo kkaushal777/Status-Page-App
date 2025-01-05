@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from backend.models import Service, Incident
+from app.models import Service, Incident
 from collections import defaultdict
 from datetime import datetime, timedelta
 

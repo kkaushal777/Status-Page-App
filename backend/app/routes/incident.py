@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, abort
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.models import db, Incident, Service, User
+from app.models import db, Incident, Service, User
 from datetime import datetime
 
 incident_bp = Blueprint('incident', __name__)
