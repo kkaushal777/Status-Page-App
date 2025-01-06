@@ -8,7 +8,8 @@ class Config:
     
 
 class DevelopmentConfig(Config):
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/mydb'
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/mydb'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///db.sqlite3'
     SECRET_KEY = 'plivo123'
     SECURITY_PASSWORD_HASH = 'bcrypt'
     SECURITY_PASSWORD_SALT = 'plivoproject' 
