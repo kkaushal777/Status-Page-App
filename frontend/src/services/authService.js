@@ -2,7 +2,7 @@ import axiosInstance from '../lib/axiosInstance';
 
 export const login = async (credentials) => {
   try {
-    const response = await axiosInstance.post('/login', credentials);
+    const response = await axiosInstance.post('/api/auth/login', credentials);
     
     // Set the token in the authorization header for subsequent requests
     if (response.data.access_token) {
@@ -24,7 +24,7 @@ export const login = async (credentials) => {
 // Add the missing register function
 export const register = async (userData) => {
   try {
-    const response = await axiosInstance.post('/register', userData);
+    const response = await axiosInstance.post('/api/auth/register', userData);
     return response.data;
   } catch (error) {
     if (error.response?.status === 409) {
