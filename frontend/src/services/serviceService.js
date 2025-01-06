@@ -15,7 +15,10 @@ export const createService = async (serviceData) => {
     const response = await axiosInstance.post('/api/services', serviceData);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.error || 'Failed to create service');
+    if (error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw new Error('Failed to create service');
   }
 };
 

@@ -53,7 +53,13 @@ export default {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			}
-  		}
+  		},
+      backgroundImage: {
+        'dot-pattern': `radial-gradient(circle at 1px 1px, hsl(var(--muted)) 1px, transparent 0)`,
+      },
+      backgroundSize: {
+        'dot-pattern': '24px 24px',
+      },
   	}
   },
   plugins: [require("tailwindcss-animate")],

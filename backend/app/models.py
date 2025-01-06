@@ -78,6 +78,7 @@ class Service(db.Model):
 
     organization = relationship("Organization", back_populates="services")
     incidents = relationship("Incident", back_populates="service", cascade="all, delete-orphan")
+    status_history = relationship("StatusHistory", back_populates="service", cascade="all, delete-orphan")
 
     def __str__(self):
         return self.name
@@ -86,7 +87,35 @@ class Service(db.Model):
     def validate_status(status):
         if status not in SERVICE_STATUSES:
             raise ValueError(f"Invalid service status. Must be one of {SERVICE_STATUSES}")
-        return status
+        return True
+    
+    def get_overall_status(services):
+        """Calculate overall system status based on service statuses"""
+        if not services:
+            return "Unknown"
+        
+        status_priority = {
+            "Outage": 3,
+            "Degraded": 2,
+            "Operational": 1
+        }
+        
+        current_status = "Operational"
+        for service in services:
+            if status_priority.get(service.status, 0) > status_priority.get(current_status, 0):
+                current_status = service.status
+        
+        return current_status
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'status': self.status,
+            'organization_id': self.organization_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
 
 class Incident(db.Model):
     __tablename__ = 'incidents'
@@ -109,5 +138,24 @@ class Incident(db.Model):
         if status not in INCIDENT_STATUSES:
             raise ValueError(f"Invalid incident status. Must be one of {INCIDENT_STATUSES}")
         return status
+    
+class StatusHistory(db.Model):
+    __tablename__ = 'status_history'
+
+    id = db.Column(db.Integer, primary_key=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
+    status = db.Column(db.String(50), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Add relationship to Service model
+    service = relationship("Service", back_populates="status_history")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'service_id': self.service_id,
+            'status': self.status,
+            'timestamp': self.timestamp.isoformat()
+        }
 
 

@@ -1,10 +1,11 @@
 // frontend/src/pages/ServicePage.jsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getAllServices, createService, updateService, deleteService } from '@/services/serviceService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import UptimeGraph from '@/components/ui/UptimeGraph';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,44 +18,84 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/contexts/AuthContext';
+import axiosInstance from '@/lib/axiosInstance';
 
 const SERVICE_STATUSES = ['Operational', 'Degraded', 'Outage'];
+
+const fetchServiceHistory = async (serviceId) => {
+  try {
+    const response = await axiosInstance.get(`/api/services/${serviceId}/history`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching service history:', error);
+    return [];
+  }
+};
 
 const ServicePage = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [newService, setNewService] = useState({ name: '', status: 'Operational' });
+  const [serviceHistories, setServiceHistories] = useState({});
   const { toast } = useToast();
   const { organization } = useAuth();
 
-  const fetchServices = useCallback(async () => {
-    try {
-      const data = await getAllServices();
-      setServices(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
+    let mounted = true;
+    
+    const fetchData = async () => {
+      try {
+        const servicesData = await getAllServices();
+        
+        if (mounted) {
+          setServices(servicesData);
+          
+          // Fetch history for each service
+          const histories = {};
+          await Promise.all(
+            servicesData.map(async (service) => {
+              const history = await fetchServiceHistory(service.id);
+              if (mounted) {
+                histories[service.id] = history;
+              }
+            })
+          );
+          
+          if (mounted) {
+            setServiceHistories(histories);
+          }
+        }
+      } catch (error) {
+        if (mounted) {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleCreate = async (e) => {
-    e.preventDefault(); // Ensure this is present to prevent default form submission
-
-    if (!organization) {
+    e.preventDefault();
+    
+    if (!organization?.id) {
       toast({
         title: "Error",
-        description: "Organization ID is required",
+        description: "Organization ID is required. Please login again.",
         variant: "destructive",
       });
       return;
@@ -62,11 +103,12 @@ const ServicePage = () => {
 
     try {
       const serviceData = {
-        ...newService,
+        name: newService.name.trim(),
+        status: newService.status,
         organization_id: organization.id
       };
 
-      if (!serviceData.name.trim()) {
+      if (!serviceData.name) {
         toast({
           title: "Error",
           description: "Service name is required",
@@ -75,16 +117,10 @@ const ServicePage = () => {
         return;
       }
 
-      // Call the API
       const data = await createService(serviceData);
-      
-      // Update local state
       setServices(prev => [...prev, data]);
-      
-      // Reset form
       setNewService({ name: '', status: 'Operational' });
       
-      // Show success message
       toast({
         title: "Success",
         description: "Service created successfully",
@@ -92,7 +128,7 @@ const ServicePage = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create service",
+        description: error.response?.data?.error || "Failed to create service",
         variant: "destructive",
       });
     }
@@ -101,13 +137,18 @@ const ServicePage = () => {
   const handleStatusUpdate = async (serviceId, newStatus) => {
     try {
       const updatedService = await updateService(serviceId, { status: newStatus });
+      
+      // Update local state
       setServices(prev => prev.map(service => 
         service.id === serviceId ? updatedService : service
       ));
+      
       toast({
         title: "Success",
         description: "Service status updated",
       });
+      
+      // Socket connection is handled automatically through the backend emit
     } catch (error) {
       toast({
         title: "Error",
@@ -176,41 +217,48 @@ const ServicePage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {services.map((service) => (
-          <Card key={service.id}>
-            <CardHeader>
-              <CardTitle className="flex justify-between items-center">
-                <span className="truncate">{service.name}</span>
-                <Badge 
-                  variant={
-                    service.status === 'Operational' ? 'default' : 
-                    service.status === 'Degraded' ? 'secondary' : 
-                    'destructive'
-                  }
-                >
-                  {service.status}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <select
-                  value={service.status}
-                  onChange={(e) => handleStatusUpdate(service.id, e.target.value)}
-                  className="px-3 py-2 border rounded flex-1"
-                >
-                  {SERVICE_STATUSES.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-                <Button 
-                  variant="destructive"
-                  onClick={() => setServiceToDelete(service)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div key={service.id} className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex justify-between items-center">
+                  <span className="truncate">{service.name}</span>
+                  <Badge 
+                    variant={
+                      service.status === 'Operational' ? 'default' : 
+                      service.status === 'Degraded' ? 'secondary' : 
+                      'destructive'
+                    }
+                  >
+                    {service.status}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <select
+                    value={service.status}
+                    onChange={(e) => handleStatusUpdate(service.id, e.target.value)}
+                    className="px-3 py-2 border rounded flex-1"
+                  >
+                    {SERVICE_STATUSES.map(status => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => setServiceToDelete(service)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <UptimeGraph 
+              service={service} 
+              data={serviceHistories[service.id] || []} 
+            />
+          </div>
         ))}
       </div>
 

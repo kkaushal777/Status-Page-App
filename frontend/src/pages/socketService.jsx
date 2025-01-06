@@ -1,24 +1,46 @@
 import { io } from 'socket.io-client';
 
 class SocketService {
-  socket = null;
+  constructor() {
+    this.socket = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+  }
 
   connect() {
-    this.socket = io('http://localhost:5000');
+    if (this.socket?.connected) return;
 
+    this.socket = io('http://localhost:5000', {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: this.maxReconnectAttempts
+    });
+
+    this.setupEventListeners();
+    return this.socket;
+  }
+
+  setupEventListeners() {
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
+      this.reconnectAttempts = 0;
     });
 
     this.socket.on('disconnect', () => {
       console.log('Disconnected from WebSocket server');
     });
 
-    this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
+    this.socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      this.reconnectAttempts++;
+      
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.error('Max reconnection attempts reached');
+        this.disconnect();
+      }
     });
-
-    return this.socket;
   }
 
   disconnect() {
@@ -35,9 +57,9 @@ class SocketService {
     this.socket.on(event, callback);
   }
 
-  unsubscribe(event, callback) {
+  unsubscribe(event) {
     if (this.socket) {
-      this.socket.off(event, callback);
+      this.socket.off(event);
     }
   }
 

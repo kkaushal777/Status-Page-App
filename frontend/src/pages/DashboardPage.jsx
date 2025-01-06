@@ -13,6 +13,8 @@ const DashboardPage = () => {
   });
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchData = async () => {
       try {
         const [services, incidents] = await Promise.all([
@@ -20,18 +22,26 @@ const DashboardPage = () => {
           getAllIncidents()
         ]);
 
-        setStats({
-          services,
-          incidents,
-          loading: false
-        });
+        if (mounted) {
+          setStats({
+            services,
+            incidents,
+            loading: false
+          });
+        }
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setStats(prev => ({ ...prev, loading: false }));
+        if (mounted) {
+          console.error('Error fetching dashboard data:', error);
+          setStats(prev => ({ ...prev, loading: false }));
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (stats.loading) {

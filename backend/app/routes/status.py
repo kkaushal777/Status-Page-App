@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from app.models import Service, Incident
+from app.models import Service, Incident, StatusHistory
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -67,8 +67,47 @@ def get_status():
 def public_status():
     """Public endpoint to get system status and incidents"""
     try:
-        status = get_status()
-        return jsonify(status), 200
+        services = Service.query.all()
+        overall_status = Service.get_overall_status(services)
+        
+        # Fetch recent history (last 30 days) for each service
+        services_with_history = []
+        for service in services:
+            history = StatusHistory.query\
+                .filter_by(service_id=service.id)\
+                .order_by(StatusHistory.timestamp.desc())\
+                .limit(30)\
+                .all()
+                
+            services_with_history.append({
+                'id': service.id,
+                'name': service.name,
+                'status': service.status,
+                'incidents': [{
+                    'id': i.id,
+                    'status': i.status,
+                    'description': i.description,
+                    'created_at': i.created_at.isoformat(),
+                    'resolved': i.resolved
+                } for i in service.incidents if not i.resolved],
+                'status_history': [{
+                    'status': h.status,
+                    'timestamp': h.timestamp.isoformat()
+                } for h in history]
+            })
+
+        status_response = {
+            'overall_status': overall_status,
+            'last_updated': datetime.utcnow().isoformat(),
+            'services': services_with_history,
+            'incident_count': {
+                'total': sum(len(s.incidents) for s in services),
+                'ongoing': sum(len([i for i in s.incidents if not i.resolved]) for s in services)
+            }
+        }
+        
+        return jsonify(status_response), 200
+
     except Exception as e:
         return jsonify({
             'error': 'Internal server error',

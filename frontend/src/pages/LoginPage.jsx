@@ -6,24 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login } = useAuth(); // Use AuthContext instead of separate service
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoading(true); // Set loading immediately
+    
+    const formData = new FormData(e.target);
+    const credentials = {
+      email: formData.get('email'),
+      password: formData.get('password'),
+    };
 
     try {
-      const formData = new FormData(e.target);
-      const credentials = {
-        email: formData.get('email'),
-        password: formData.get('password'),
-      };
-
       await login(credentials);
       navigate('/dashboard');
       
@@ -78,7 +79,14 @@ const LoginPage = () => {
               className="w-full"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </Button>
           </form>
         </CardContent>

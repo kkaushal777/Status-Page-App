@@ -1,5 +1,6 @@
 // src/hooks/use-auth.js
 import { useState, useEffect } from 'react';
+import axiosInstance from '@/lib/axiosInstance';
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,7 +13,7 @@ export const useAuth = () => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = localStorage.getItem('token'); // Changed from 'authToken'
+      const token = localStorage.getItem('token');
       if (token) {
         // Make an actual API call to verify the token
         const response = await axiosInstance.get('/api/auth/me');
@@ -30,12 +31,20 @@ export const useAuth = () => {
   };
 
   const login = async (credentials) => {
-    setIsAuthenticated(true);
-    setUser({ id: '1', name: 'User' });
+    try {
+      const response = await axiosInstance.post('/api/auth/login', credentials);
+      setIsAuthenticated(true);
+      setUser(response.data.user);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    delete axiosInstance.defaults.headers.common['Authorization'];
     setIsAuthenticated(false);
     setUser(null);
   };

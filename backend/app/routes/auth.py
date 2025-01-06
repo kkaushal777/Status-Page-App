@@ -18,29 +18,21 @@ logger = logging.getLogger(__name__)
 def login():
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "Missing request body"}), 400
-
-        email = data.get('email')
-        password = data.get('password')
-
-        # Validate inputs
-        if not email or not password:
+        if not data or not data.get('email') or not data.get('password'):
             return jsonify({"error": "Email and password required"}), 400
-        
-        if not validate_email(email):
+
+        # Quick email format check before database query
+        if not validate_email(data['email']):
             return jsonify({"error": "Invalid email format"}), 400
 
-        # Get user from database
-        user = User.query.filter_by(email=email).first()
-        if not user or not user.verify_password(password):
-            logger.warning(f"Failed login attempt for email: {email}")
+        user = User.query.filter_by(email=data['email']).first()
+        if not user or not user.verify_password(data['password']):
             return jsonify({"error": "Invalid credentials"}), 401
 
-        access_token = create_access_token(identity=user.email, expires_delta=timedelta(hours=1))
+        # Generate tokens in parallel
+        access_token = create_access_token(identity=user.email)
         refresh_token = create_refresh_token(identity=user.email)
-        logger.info(f"Successful login for user: {email}")
-        
+
         return jsonify({
             'access_token': access_token,
             'refresh_token': refresh_token,
@@ -53,7 +45,6 @@ def login():
                 'name': user.organization.name
             } if user.organization else None
         }), 200
-
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500

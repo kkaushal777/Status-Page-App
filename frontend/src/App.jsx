@@ -1,16 +1,18 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { Toaster } from './components/ui/toaster';
-import Layout from './components/Layout';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ServicePage from './pages/ServicePage';
-import IncidentPage from './pages/IncidentPage';
-import StatusPage from './pages/StatusPage';
-import DashboardPage from './pages/DashboardPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import NotFoundPage from './pages/NotFoundPage';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
+import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+
+// Pages
+import LoginPage from '@/pages/LoginPage';
+import RegisterPage from '@/pages/RegisterPage';
+import DashboardPage from '@/pages/DashboardPage';
+import ServicePage from '@/pages/ServicePage';
+import IncidentPage from '@/pages/IncidentPage';
+import StatusPage from '@/pages/StatusPage';
+import NotFoundPage from '@/pages/NotFoundPage';
 
 function App() {
   return (
@@ -25,13 +27,13 @@ function App() {
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<DashboardPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/services" element={<ServicePage />} />
               <Route path="/incidents" element={<IncidentPage />} />
             </Route>
 
-            {/* Default Routes */}
-            <Route path="/" element={<Navigate to="/status" replace />} />
+            {/* 404 Route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>

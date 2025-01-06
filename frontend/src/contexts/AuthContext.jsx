@@ -8,61 +8,53 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Add this line
   const { toast } = useToast();
 
-  // Add this function to verify token
-  const verifyToken = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      // Set token in axios headers
-      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      const response = await axiosInstance.get('/api/auth/me'); // Updated endpoint
-      setUser(response.data.user);
-      setOrganization(response.data.organization);
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      // Only clear auth if it's an authentication error
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        delete axiosInstance.defaults.headers.common['Authorization'];
-        setUser(null);
-        setOrganization(null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await axiosInstance.get('/api/auth/me');
+        setUser(response.data.user);
+        setOrganization(response.data.organization);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Auth verification failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     verifyToken();
   }, []);
 
   const login = async (credentials) => {
     try {
-      const response = await axiosInstance.post('/login', credentials);
+      const response = await axiosInstance.post('/api/auth/login', credentials);
       const { access_token, refresh_token, user: userData, organization } = response.data;
       
-      // Set the token in axios instance headers
+      // Batch operations
+      Promise.all([
+        localStorage.setItem('token', access_token),
+        localStorage.setItem('refreshToken', refresh_token)
+      ]);
+      
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       
-      // Store tokens in localStorage
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('refreshToken', refresh_token);
-      
-      // Update state
+      // Batch state updates
+      setIsAuthenticated(true);
       setUser(userData);
       setOrganization(organization);
       
       toast({
         title: "Logged in successfully",
-        variant: "default",
+        variant: "default", 
       });
       
       return response.data;
@@ -78,24 +70,30 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear storage
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    
+    // Clear auth header
     delete axiosInstance.defaults.headers.common['Authorization'];
+    
+    // Reset all auth states
     setUser(null);
     setOrganization(null);
+    setIsAuthenticated(false); // Add this line to update authentication state
   };
 
   const register = async (userData) => {
     try {
-      const response = await axiosInstance.post('/register', userData);
+      const response = await axiosInstance.post('/api/auth/register', userData);
       toast({
-        title: "Registration successful",
-        description: "Please login with your credentials",
+        title: "Success",
+        description: "Registration successful! Please login.",
         variant: "default",
       });
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'An error occurred during registration';
+      const message = error.response?.data?.error || 'Registration failed';
       toast({
         title: "Error",
         description: message,
@@ -134,7 +132,7 @@ export const AuthProvider = ({ children }) => {
         user,
         organization,
         loading,
-        isAuthenticated: !!user,
+        isAuthenticated,
         login,
         logout,
         register,

@@ -2,10 +2,13 @@ import axiosInstance from '../lib/axiosInstance';
 
 export const login = async (credentials) => {
   try {
+    // Change /login to /api/auth/login to match backend route
     const response = await axiosInstance.post('/api/auth/login', credentials);
     
-    // Set the token in the authorization header for subsequent requests
+    // Store tokens after successful login
     if (response.data.access_token) {
+      localStorage.setItem('token', response.data.access_token);
+      localStorage.setItem('refreshToken', response.data.refresh_token);
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
     }
     
@@ -21,9 +24,9 @@ export const login = async (credentials) => {
   }
 };
 
-// Add the missing register function
 export const register = async (userData) => {
   try {
+    // Change /register to /api/auth/register
     const response = await axiosInstance.post('/api/auth/register', userData);
     return response.data;
   } catch (error) {
