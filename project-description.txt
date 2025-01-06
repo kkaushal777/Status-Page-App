@@ -7,7 +7,7 @@ Tech Stack
  You are required to use the following technologies:
 Frontend: You may choose any front-end framework such as React, or others you are comfortable with.
 Backend: Python (Flask)
-Database: PostgreSQL with an ORM for database interaction.
+Database: sqlite3 with an ORM for database interaction.
 Authentication: Implement user and team management using SaaS tools like Auth0 for authentication and multi-tenant organization management.
 WebSocket: Implement real-time status updates via WebSocket.
 UI: Use ShadcnUI for clean, minimalistic design (mandatory).
