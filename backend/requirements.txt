@@ -27,3 +27,6 @@ flask_cors==5.0.0
 flask_jwt_extended==4.7.1
 flask_limiter==3.9.2
 bcrypt==3.2.2
+
+# backend/requirements.txt
+Flask-Mail==0.9.1

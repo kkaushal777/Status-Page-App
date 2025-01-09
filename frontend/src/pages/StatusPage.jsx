@@ -1,34 +1,47 @@
 import React, { useEffect, useState } from 'react';
+import { getAllServices, createService, updateService, deleteService } from '@/services/serviceService';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import StatusIndicator from '@/components/ui/StatusIndicator';
+import UptimeGraph from '@/components/ui/UptimeGraph';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertTriangle, XCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import socketService from './socketService';
 import axiosInstance from '@/lib/axiosInstance';
 
-const StatusIndicator = ({ status }) => {
-  const icons = {
-    Operational: <CheckCircle2 className="h-5 w-5 text-green-500" />,
-    Degraded: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
-    Outage: <XCircle className="h-5 w-5 text-red-500" />
-  };
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric', 
+    month: 'long',
+    day: 'numeric'
+  });
+};
 
-  const colors = {
-    Operational: 'bg-green-100 text-green-800 border-green-200',
-    Degraded: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    Outage: 'bg-red-100 text-red-800 border-red-200'
-  };
+const formatTime = (date) => {
+  return new Date(date).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
-  return (
-    <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${colors[status]}`}>
-      {icons[status]}
-      <span className="text-sm font-medium">{status}</span>
-    </div>
-  );
+const groupIncidentsByDate = (incidents) => {
+  return incidents.reduce((groups, incident) => {
+    const date = new Date(incident.created_at).toISOString().split('T')[0];
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(incident);
+    return groups;
+  }, {});
 };
 
 const StatusPage = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [minimizedServices, setMinimizedServices] = useState(new Set());
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -69,6 +82,18 @@ const StatusPage = () => {
     };
   }, []);
 
+  const toggleMinimize = (serviceId) => {
+    setMinimizedServices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
+      } else {
+        newSet.add(serviceId);
+      }
+      return newSet;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -78,78 +103,108 @@ const StatusPage = () => {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2">System Status</h1>
-        <p className="text-muted-foreground">
-          Current status as of {status?.last_updated && new Date(status.last_updated).toLocaleString()}
-        </p>
-      </div>
-
-      <Card className="mb-8 border-2">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center p-6">
-            <StatusIndicator status={status?.overall_status || 'Unknown'} />
-            <p className="mt-4 text-muted-foreground">
-              {status?.overall_status === 'Operational' 
-                ? 'All systems are operational'
-                : 'Some systems are experiencing issues'}
-            </p>
+    <div className="min-h-screen bg-status-background">
+      <div className="container max-w-5xl mx-auto p-6">
+        {/* Hero Section with Status and Subscribe */}
+        <div className="flex flex-col md:flex-row justify-between items-center py-12 gap-6">
+          <div>
+            <h1 className="text-4xl font-bold mb-4">System Status</h1>
+            <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <div className={`w-2 h-2 rounded-full ${
+                status?.overall_status === 'Operational' 
+                  ? 'bg-status-operational' 
+                  : 'bg-status-outage'
+              }`} />
+              <span>
+                {status?.overall_status === 'Operational' 
+                  ? 'All Systems Operational'
+                  : 'Some Systems Are Experiencing Issues'}
+              </span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          
+        </div>
 
-      <div className="grid gap-6">
-        {status?.services?.map((service) => (
-          <Card key={service.id} className="overflow-hidden">
-            <CardHeader className="bg-muted/50">
+        {/* Services Grid */}
+        <div className="grid gap-4 mb-8">
+          {status?.services?.map((service) => (
+            <div 
+              key={service.id}
+              className="bg-white rounded-lg shadow-sm border p-4"
+            >
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{service.name}</CardTitle>
-                <StatusIndicator status={service.status} />
+                <h3 className="font-medium">{service.name}</h3>
+                <div className="flex items-center gap-2">
+                  <StatusIndicator status={service.status} />
+                  <button
+                    onClick={() => toggleMinimize(service.id)}
+                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    {minimizedServices.has(service.id) 
+                      ? <ChevronDown className="h-4 w-4" />
+                      : <ChevronUp className="h-4 w-4" />
+                    }
+                  </button>
+                </div>
               </div>
-            </CardHeader>
-            {service.incidents?.length > 0 && (
-              <CardContent className="mt-4">
-                <div className="space-y-4">
-                  {service.incidents.map((incident) => (
-                    <div 
-                      key={incident.id} 
-                      className="bg-muted/30 rounded-lg p-4 border border-border/50"
-                    >
-                      <div className="flex justify-between items-start gap-4">
-                        <div>
-                          <h4 className="font-medium mb-1">{incident.description}</h4>
-                          <time className="text-sm text-muted-foreground">
-                            {new Date(incident.created_at).toLocaleString()}
-                          </time>
+              
+              {/* Collapsible content */}
+              <div className={`mt-4 space-y-3 transition-all duration-200 ${
+                minimizedServices.has(service.id) ? 'hidden' : 'block'
+              }`}>
+                {service.incidents?.length > 0 && (
+                  <div className="space-y-3">
+                    {service.incidents.map((incident) => (
+                      <div 
+                        key={incident.id}
+                        className="bg-muted/30 rounded p-3 text-sm"
+                      >
+                        <div className="flex justify-between gap-4">
+                          <p>{incident.description}</p>
+                          <Badge variant={incident.resolved ? 'outline' : 'destructive'}>
+                            {incident.status}
+                          </Badge>
                         </div>
-                        <Badge variant={incident.resolved ? 'outline' : 'destructive'}>
-                          {incident.status}
-                        </Badge>
+                        <time className="block mt-2 text-xs text-muted-foreground">
+                          {new Date(incident.created_at).toLocaleString()}
+                        </time>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Past Incidents */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h2 className="text-xl font-semibold mb-4">Past Incidents</h2>
+          <div className="space-y-8">
+            {/* Group incidents by date */}
+            {Object.entries(groupIncidentsByDate(status?.incidents || [])).map(([date, incidents]) => (
+              <div key={date}>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                  {formatDate(date)}
+                </h3>
+                <div className="space-y-4">
+                  {incidents.map((incident) => (
+                    <div key={incident.id} className="pl-4 border-l-2 border-muted">
+                      <p className="font-medium">{incident.description}</p>
+                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{incident.status}</span>
+                        <span>•</span>
+                        <time>{formatTime(incident.created_at)}</time>
                       </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            )}
-          </Card>
-        ))}
-      </div>
-
-      {status?.incident_count && (
-        <div className="mt-8 p-4 bg-muted/30 rounded-lg">
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold">{status.incident_count.total}</div>
-              <div className="text-sm text-muted-foreground">Total Incidents</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{status.incident_count.ongoing}</div>
-              <div className="text-sm text-muted-foreground">Ongoing Incidents</div>
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -5,15 +5,18 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS  # Import CORS
 from flask_socketio import SocketIO  # Import SocketIO
+from flask_mail import Mail  # Import Mail
 
 from app.config import DevelopmentConfig
 from sqlalchemy.exc import OperationalError
 import logging
+import os  # Import os
 
 # Initialize SQLAlchemy
 db = SQLAlchemy()
 jwt = JWTManager()
 socketio = SocketIO()  # Initialize SocketIO
+mail = Mail()  # Initialize Mail
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,12 +48,16 @@ def register_blueprints(app):
         from app.routes.service import service_bp
         from app.routes.incident import incident_bp
         from app.routes.status import status_bp
+        from app.routes.notification import notification_bp 
+        from app.routes.api import api_bp
         # from app.routes.organization import organization_bp
 
         app.register_blueprint(auth_bp)
         app.register_blueprint(service_bp)
         app.register_blueprint(incident_bp)
         app.register_blueprint(status_bp)
+        app.register_blueprint(notification_bp)
+        app.register_blueprint(api_bp)
         # app.register_blueprint(organization_bp)
 
         logger.info("Blueprints registered successfully")
@@ -61,6 +68,12 @@ def register_blueprints(app):
 def create_app():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
+    
+    # Enable flash messages
+    app.config['SESSION_TYPE'] = 'filesystem'
+    
+    from app.tasks import start_uptime_tracker
+    start_uptime_tracker()
 
     from app.models import User, Role
     datastore = SQLAlchemyUserDatastore(db, User, Role)
@@ -74,6 +87,17 @@ def create_app():
 
     # Enable CORS
     CORS(app)
+
+    # Configure and initialize Flask-Mail
+    app.config.update(
+        MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com'),
+        MAIL_PORT = int(os.getenv('MAIL_PORT', 587)),
+        MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true',
+        MAIL_USERNAME = os.getenv('MAIL_USERNAME'),
+        MAIL_PASSWORD = os.getenv('MAIL_APP_PASSWORD'),
+        MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
+    )
+    mail.init_app(app)
 
     # Register blueprints
     register_blueprints(app)

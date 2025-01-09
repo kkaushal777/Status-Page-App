@@ -52,7 +52,13 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
+  			},
+        status: {
+          operational: '#2FB344',
+          degraded: '#DE9B3A', 
+          outage: '#DC3545',
+          background: '#F8F9FA'
+        }
   		},
       backgroundImage: {
         'dot-pattern': `radial-gradient(circle at 1px 1px, hsl(var(--muted)) 1px, transparent 0)`,

@@ -129,8 +129,13 @@ const IncidentPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <Card className="mb-6">
+    <div className="container max-w-5xl mx-auto p-6">
+      <div className="text-center py-12">
+        <h1 className="text-4xl font-bold mb-4">Incident Management</h1>
+        <p className="text-muted-foreground">Track and manage service incidents</p>
+      </div>
+
+      <Card className="bg-white shadow-sm mb-8">
         <CardHeader>
           <CardTitle>Report New Incident</CardTitle>
         </CardHeader>
@@ -140,26 +145,24 @@ const IncidentPage = () => {
               <select
                 value={newIncident.service_id}
                 onChange={(e) => setNewIncident({ ...newIncident, service_id: e.target.value })}
-                className="px-3 py-2 border rounded"
+                className="px-3 py-2 rounded-md border border-input bg-transparent"
                 required
               >
                 <option value="">Select Service</option>
                 {services.map(service => (
-                  <option key={service.id} value={service.id}>
-                    {service.name}
-                  </option>
+                  <option key={service.id} value={service.id}>{service.name}</option>
                 ))}
               </select>
               
               <select
                 value={newIncident.status}
                 onChange={(e) => setNewIncident({ ...newIncident, status: e.target.value })}
-                className="px-3 py-2 border rounded"
+                className="px-3 py-2 rounded-md border border-input bg-transparent"
                 required
               >
-                <option value="Ongoing">Ongoing</option>
-                <option value="Resolved">Resolved</option>
-                <option value="Scheduled">Scheduled</option>
+                {['Ongoing', 'Resolved', 'Scheduled'].map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
               </select>
             </div>
             
@@ -170,35 +173,37 @@ const IncidentPage = () => {
               required
             />
             
-            <Button type="submit">Create Incident</Button>
+            <Button type="submit" className="w-full">Create Incident</Button>
           </form>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="space-y-6">
         {incidents.map((incident) => {
           const service = services.find(s => s.id === incident.service_id);
           return (
-            <Card key={incident.id}>
+            <Card key={incident.id} className="bg-white shadow-sm">
               <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  {service?.name || 'Unknown Service'}
-                  <Badge variant={incident.status === 'Resolved' ? 'success' : 'destructive'}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">
+                    {service?.name || 'Unknown Service'}
+                  </CardTitle>
+                  <Badge variant={incident.status === 'Resolved' ? 'outline' : 'destructive'}>
                     {incident.status}
                   </Badge>
-                </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="mb-4">{incident.description}</p>
-                <div className="flex gap-2">
+                <p className="mb-4 text-muted-foreground">{incident.description}</p>
+                <div className="flex gap-4">
                   <select
                     value={incident.status}
                     onChange={(e) => handleStatusUpdate(incident.id, e.target.value)}
-                    className="px-3 py-2 border rounded"
+                    className="flex-1 px-3 py-2 rounded-md border border-input bg-transparent"
                   >
-                    <option value="Ongoing">Ongoing</option>
-                    <option value="Resolved">Resolved</option>
-                    <option value="Scheduled">Scheduled</option>
+                    {['Ongoing', 'Resolved', 'Scheduled'].map(status => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
                   </select>
                   <Button 
                     variant="destructive"

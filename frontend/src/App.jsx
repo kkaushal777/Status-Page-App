@@ -20,14 +20,15 @@ function App() {
       <Router>
         <Layout>
           <Routes>
+
             {/* Public Routes */}
+            <Route path="/" element={<StatusPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/status" element={<StatusPage />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<DashboardPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/services" element={<ServicePage />} />
               <Route path="/incidents" element={<IncidentPage />} />

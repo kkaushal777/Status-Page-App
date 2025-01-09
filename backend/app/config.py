@@ -1,9 +1,20 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Config:
     DEBUG = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') 
+
+
+    MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.getenv('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME', 'roxxkk786@gmail.com')  # Change this in .env
+    MAIL_APP_PASSWORD = os.getenv('MAIL_PASSWORD', '')  # Must be set in .env
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME', 'your-email@gmail.com'))
 
     
 

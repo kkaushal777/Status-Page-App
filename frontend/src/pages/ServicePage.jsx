@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import StatusIndicator from '@/components/ui/StatusIndicator';
 import UptimeGraph from '@/components/ui/UptimeGraph';
 import {
   AlertDialog,
@@ -20,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axiosInstance from '@/lib/axiosInstance';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 const SERVICE_STATUSES = ['Operational', 'Degraded', 'Outage'];
 
@@ -39,6 +41,7 @@ const ServicePage = () => {
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [newService, setNewService] = useState({ name: '', status: 'Operational' });
   const [serviceHistories, setServiceHistories] = useState({});
+  const [minimizedServices, setMinimizedServices] = useState(new Set());
   const { toast } = useToast();
   const { organization } = useAuth();
 
@@ -178,6 +181,18 @@ const ServicePage = () => {
     }
   };
 
+  const toggleMinimize = (serviceId) => {
+    setMinimizedServices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
+      } else {
+        newSet.add(serviceId);
+      }
+      return newSet;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -187,8 +202,13 @@ const ServicePage = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <Card className="mb-6">
+    <div className="container max-w-5xl mx-auto p-6">
+      <div className="text-center py-12">
+        <h1 className="text-4xl font-bold mb-4">Service Management</h1>
+        <p className="text-muted-foreground">Manage and monitor your services</p>
+      </div>
+
+      <Card className="bg-white shadow-sm mb-8">
         <CardHeader>
           <CardTitle>Add New Service</CardTitle>
         </CardHeader>
@@ -198,13 +218,12 @@ const ServicePage = () => {
               value={newService.name}
               onChange={(e) => setNewService({ ...newService, name: e.target.value })}
               placeholder="Service name"
-              required
               className="flex-1"
             />
             <select
               value={newService.status}
               onChange={(e) => setNewService({ ...newService, status: e.target.value })}
-              className="px-3 py-2 border rounded min-w-[150px]"
+              className="px-3 py-2 rounded-md border border-input bg-transparent"
             >
               {SERVICE_STATUSES.map(status => (
                 <option key={status} value={status}>{status}</option>
@@ -215,30 +234,37 @@ const ServicePage = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {services.map((service) => (
-          <div key={service.id} className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  <span className="truncate">{service.name}</span>
-                  <Badge 
-                    variant={
-                      service.status === 'Operational' ? 'default' : 
-                      service.status === 'Degraded' ? 'secondary' : 
-                      'destructive'
-                    }
-                  >
-                    {service.status}
-                  </Badge>
+          <Card key={service.id} className="bg-white shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="flex items-center justify-between w-full">
+                <CardTitle className="text-base font-semibold">
+                  {service.name}
                 </CardTitle>
-              </CardHeader>
+                <div className="flex items-center gap-4">
+                  <StatusIndicator status={service.status} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleMinimize(service.id)}
+                    className="h-8 w-8 p-0"
+                  >
+                    {minimizedServices.has(service.id) ? 
+                      <ChevronDown className="h-4 w-4" /> : 
+                      <ChevronUp className="h-4 w-4" />
+                    }
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            {!minimizedServices.has(service.id) && (
               <CardContent>
-                <div className="flex gap-2">
+                <div className="space-y-4">
                   <select
                     value={service.status}
                     onChange={(e) => handleStatusUpdate(service.id, e.target.value)}
-                    className="px-3 py-2 border rounded flex-1"
+                    className="w-full px-3 py-2 rounded-md border border-input bg-transparent"
                   >
                     {SERVICE_STATUSES.map(status => (
                       <option key={status} value={status}>{status}</option>
@@ -246,19 +272,16 @@ const ServicePage = () => {
                   </select>
                   <Button 
                     variant="destructive"
+                    className="w-full"
                     onClick={() => setServiceToDelete(service)}
                   >
-                    Delete
+                    Delete Service
                   </Button>
+                  <UptimeGraph service={service} />
                 </div>
               </CardContent>
-            </Card>
-            
-            <UptimeGraph 
-              service={service} 
-              data={serviceHistories[service.id] || []} 
-            />
-          </div>
+            )}
+          </Card>
         ))}
       </div>
 

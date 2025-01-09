@@ -1,5 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import StatusIndicator from '@/components/ui/StatusIndicator';
 import { getAllServices } from '@/services/serviceService';
 import { getAllIncidents } from '@/services/incidentService';
 import { useEffect, useState } from 'react';
@@ -53,82 +55,64 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Services</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{stats.services.length}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Incidents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {stats.incidents.filter(i => !i.resolved).length}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Service Health</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {Math.round(
-                (stats.services.filter(s => s.status === 'Operational').length / 
-                stats.services.length) * 100
-              )}%
-            </p>
-          </CardContent>
-        </Card>
+    <div className="container max-w-5xl mx-auto p-6">
+      <div className="text-center py-12">
+        <h1 className="text-4xl font-bold mb-4">Dashboard Overview</h1>
+        <p className="text-muted-foreground">Monitor your system's health and performance</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Stats Cards */}
+        {['Total Services', 'Active Incidents', 'Service Health'].map((title, i) => (
+          <Card key={i} className="bg-white shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {i === 0 && stats.services.length}
+                {i === 1 && stats.incidents.filter(i => !i.resolved).length}
+                {i === 2 && `${Math.round((stats.services.filter(s => s.status === 'Operational').length / stats.services.length) * 100)}%`}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        {/* Recent Incidents */}
+        <Card className="bg-white shadow-sm">
           <CardHeader>
-            <CardTitle>Recent Incidents</CardTitle>
+            <CardTitle className="text-lg font-semibold">Recent Incidents</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {stats.incidents.slice(0, 5).map(incident => (
-              <div key={incident.id} className="mb-4 p-4 border rounded">
-                <p className="font-semibold">{incident.description}</p>
-                <p className="text-sm text-gray-500">
-                  Status: {incident.status}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Created: {new Date(incident.created_at).toLocaleString()}
-                </p>
+              <div key={incident.id} className="p-4 rounded-lg bg-muted/30">
+                <p className="font-medium mb-2">{incident.description}</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant={incident.resolved ? 'outline' : 'destructive'}>
+                    {incident.status}
+                  </Badge>
+                  <span>•</span>
+                  <time>{new Date(incident.created_at).toLocaleString()}</time>
+                </div>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Service Status */}
+        <Card className="bg-white shadow-sm">
           <CardHeader>
-            <CardTitle>Service Status Overview</CardTitle>
+            <CardTitle className="text-lg font-semibold">Service Status</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {stats.services.map(service => (
-              <div key={service.id} className="mb-4 p-4 border rounded">
-                <div className="flex justify-between items-center">
-                  <p className="font-semibold">{service.name}</p>
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    service.status === 'Operational' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {service.status}
-                  </span>
-                </div>
+              <div key={service.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                <span className="font-medium">{service.name}</span>
+                <StatusIndicator status={service.status} />
               </div>
             ))}
           </CardContent>

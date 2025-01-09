@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, flash
 from flask_jwt_extended import (
     create_access_token, 
     jwt_required,
@@ -19,20 +19,23 @@ def login():
     try:
         data = request.get_json()
         if not data or not data.get('email') or not data.get('password'):
+            flash('Email and password required', 'error')
             return jsonify({"error": "Email and password required"}), 400
 
         # Quick email format check before database query
         if not validate_email(data['email']):
+            flash('Invalid email format', 'error')
             return jsonify({"error": "Invalid email format"}), 400
 
         user = User.query.filter_by(email=data['email']).first()
         if not user or not user.verify_password(data['password']):
+            flash('Invalid credentials', 'error') 
             return jsonify({"error": "Invalid credentials"}), 401
 
-        # Generate tokens in parallel
         access_token = create_access_token(identity=user.email)
         refresh_token = create_refresh_token(identity=user.email)
 
+        flash('Successfully logged in', 'success')
         return jsonify({
             'access_token': access_token,
             'refresh_token': refresh_token,
@@ -46,6 +49,7 @@ def login():
             } if user.organization else None
         }), 200
     except Exception as e:
+        flash(f'Login error: {str(e)}', 'error')
         logger.error(f"Login error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, abort
+from flask import Blueprint, request, jsonify, abort, flash
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models import db, Incident, Service, User
 from datetime import datetime
@@ -74,19 +74,14 @@ def manage_incidents():
             db.session.add(new_incident)
             db.session.commit()
             
-            return jsonify({
-                'id': new_incident.id,
-                'service_id': new_incident.service_id,
-                'status': new_incident.status,
-                'description': new_incident.description,
-                'resolved': new_incident.resolved,
-                'created_at': new_incident.created_at.isoformat(),
-                'updated_at': new_incident.updated_at.isoformat()
-            }), 201
+            flash('Incident created successfully', 'success')
+            return jsonify(new_incident.to_dict()), 201
 
     except ValueError as e:
+        flash(str(e), 'error')
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        flash('Failed to create incident', 'error')
         db.session.rollback()
         return jsonify({'error': 'Internal server error'}), 500
 

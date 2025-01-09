@@ -2,7 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 from flask_security import UserMixin, RoleMixin
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 from . import db
 
 # Service and Incident Status Constants
@@ -75,6 +75,8 @@ class Service(db.Model):
     organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    uptime_percentage = db.Column(db.Float, default=100.0)
+    last_uptime_check = db.Column(db.DateTime, default=datetime.utcnow)
 
     organization = relationship("Organization", back_populates="services")
     incidents = relationship("Incident", back_populates="service", cascade="all, delete-orphan")
@@ -117,6 +119,36 @@ class Service(db.Model):
             'updated_at': self.updated_at.isoformat()
         }
 
+    def calculate_uptime(self):
+        """Calculate uptime percentage based on status history"""
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        history = StatusHistory.query.filter(
+            StatusHistory.service_id == self.id,
+            StatusHistory.timestamp >= thirty_days_ago
+        ).order_by(StatusHistory.timestamp.desc()).all()
+
+        if not history:
+            return 100.0
+
+        total_time = 0
+        operational_time = 0
+        prev_status = None
+        prev_time = None
+
+        for entry in history:
+            if prev_time:
+                time_diff = (prev_time - entry.timestamp).total_seconds()
+                total_time += time_diff
+                if prev_status == 'Operational':
+                    operational_time += time_diff
+            prev_status = entry.status
+            prev_time = entry.timestamp
+
+        if total_time == 0:
+            return 100.0
+
+        return (operational_time / total_time) * 100
+
 class Incident(db.Model):
     __tablename__ = 'incidents'
 
@@ -155,7 +187,17 @@ class StatusHistory(db.Model):
             'id': self.id,
             'service_id': self.service_id,
             'status': self.status,
-            'timestamp': self.timestamp.isoformat()
+            'timestamp': self.timestamp.isoformat(),
+            'uptime_value': 100 if self.status == 'Operational' else 50 if self.status == 'Degraded' else 0
+
+
         }
 
+class EmailSubscriber(db.Model):
+    __tablename__ = 'email_subscribers'
 
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_verified = db.Column(db.Boolean, default=False)
+    verification_token = db.Column(db.String(255), unique=True)
