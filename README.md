@@ -42,7 +42,7 @@ A simplified status page application similar to StatusPage or Cachet, built with
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/kkaushal777/Status-Page-App.git
 ```
 
 2. Set up the backend:
@@ -56,7 +56,7 @@ pip install -r requirements.txt
 3. Configure environment variables:
 Create a `.env` file in the backend directory:
 ```env
-DATABASE_URL=sqlite:///db.sqlite3
+DATABASE_URL=sqlite:///db.sqlite3 #for simplicity
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USERNAME=your-email@gmail.com
@@ -102,7 +102,7 @@ npm run dev
 
 ### Important Links
 
-- **Live Demo**: [Status Page App Demo](https://status-page-nine-indol.vercel.app/)
+- **Live Demo**: [Status Page App Demo](https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app/)
 - **Video Demo**: [Watch it](https://drive.google.com/drive/folders/1yeZNQtB6N2Ks4MlAiWVbFLE7E5GXc5RF)
 
 ## License
