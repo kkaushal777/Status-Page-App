@@ -72,7 +72,8 @@ def create_app():
     # Initialize extensions
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app"],
+            "origins": ["http://localhost:5173", "https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app",
+                        'https://status-page-nine-indol.vercel.app'],
             "supports_credentials": True,
             "allow_headers": ["Content-Type", "Authorization"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]

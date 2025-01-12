@@ -39,33 +39,19 @@ export const AuthProvider = ({ children }) => {
       const response = await axiosInstance.post('/api/auth/login', credentials);
       const { access_token, refresh_token, user: userData, organization } = response.data;
       
-      // Batch operations
-      Promise.all([
-        localStorage.setItem('token', access_token),
-        localStorage.setItem('refreshToken', refresh_token)
-      ]);
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('refreshToken', refresh_token);
       
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       
-      // Batch state updates
       setIsAuthenticated(true);
       setUser(userData);
       setOrganization(organization);
       
-      toast({
-        title: "Logged in successfully",
-        variant: "default", 
-      });
-      
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'An error occurred during login';
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
-      throw error;
+      const message = error.response?.data?.error || 'Invalid email or password';
+      throw new Error(message);
     }
   };
 

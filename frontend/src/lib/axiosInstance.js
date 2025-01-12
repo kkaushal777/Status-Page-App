@@ -24,32 +24,19 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Add response interceptor for token refresh
+// Add response interceptor to handle errors
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const response = await axios.post('/api/auth/refresh', { 
-          refresh_token: refreshToken 
-        });
-        
-        const { access_token } = response.data;
-        localStorage.setItem('token', access_token);
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-        
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+  (error) => {
+    // Don't redirect on 401/400 errors from auth endpoints
+    if (error.config.url.includes('/api/auth/') && 
+        (error.response?.status === 401 || error.response?.status === 400)) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

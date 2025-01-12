@@ -1,5 +1,5 @@
 // frontend/src/pages/LoginPage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,15 @@ import { Loader2 } from 'lucide-react';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth(); // Use AuthContext instead of separate service
+  const { login } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Set loading immediately
+    setLoading(true);
+    setError('');
     
     const formData = new FormData(e.target);
     const credentials = {
@@ -27,16 +29,12 @@ const LoginPage = () => {
     try {
       await login(credentials);
       navigate('/dashboard');
-      
-      toast({
-        title: "Success",
-        description: "Successfully logged in!",
-        variant: "success",
-      });
     } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to login';
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: error.message || "Failed to login",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -51,6 +49,11 @@ const LoginPage = () => {
           <CardTitle className="text-2xl text-center">Login</CardTitle>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 rounded bg-destructive/15 text-destructive text-sm">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email">Email</label>
