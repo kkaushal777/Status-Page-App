@@ -69,12 +69,19 @@ cd frontend
 npm install
 ```
 
+### Application View
+<img width="865" alt="status-page" src="https://github.com/user-attachments/assets/f6cf4e86-0de8-4687-92e9-e64e43767273" />
+<img width="574" alt="dashboard" src="https://github.com/user-attachments/assets/64757218-f6c0-4fa5-8844-87fa59fa1c68" />
+<img width="565" alt="service_mgm" src="https://github.com/user-attachments/assets/406bec5d-42d7-4347-8ee6-997ed1f0d785" />
+
 ### Running the Application
 
 1. Start the backend server:
 ```bash
 cd backend
 flask run
+
+
 ```
 
 2. Start the frontend development server:
