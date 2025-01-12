@@ -1,8 +1,10 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000',
-  timeout: 3000,
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? 'https://status-page-backend.onrender.com'
+    : 'http://localhost:5000',
+  timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
   }
