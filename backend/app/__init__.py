@@ -83,7 +83,8 @@ def create_app():
     # Fix Socket.IO configuration
     socketio.init_app(app, 
                      cors_allowed_origins=["http://localhost:5173", 
-                                         "https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app"],
+                                         "https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app",
+                                         "https://status-page-nine-indol.vercel.app"],
                      async_mode='eventlet',
                      logger=True,
                      engineio_logger=True)
