@@ -10,12 +10,17 @@ class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
-    this.socket = io('http://localhost:5000', {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: this.maxReconnectAttempts
+    const baseURL = process.env.NODE_ENV === 'production'
+        ? 'https://status-page-backend.onrender.com'
+        : 'http://localhost:5000';
+
+    this.socket = io(baseURL, {
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: this.maxReconnectAttempts,
+        withCredentials: true
     });
 
     this.setupEventListeners();

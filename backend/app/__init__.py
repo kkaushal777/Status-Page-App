@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import Security, SQLAlchemyUserDatastore
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -69,25 +69,27 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
     
-    # Configure CORS properly
+    # Initialize extensions
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["https://status-page-nine-indol.vercel.app/"],
-            "supports_credentials": True
+            "origins": ["http://localhost:5173", "https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app"],
+            "supports_credentials": True,
+            "allow_headers": ["Content-Type", "Authorization"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
         }
     })
     
-    # Configure Socket.IO
+    # Fix Socket.IO configuration
     socketio.init_app(app, 
-                     cors_allowed_origins=["//https://status-page-nine-indol.vercel.app/"],
-                     async_mode='eventlet')
+                     cors_allowed_origins=["http://localhost:5173", 
+                                         "https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app"],
+                     async_mode='eventlet',
+                     logger=True,
+                     engineio_logger=True)
     
     # Enable flash messages
     app.config['SESSION_TYPE'] = 'filesystem'
     
-    from app.tasks import start_uptime_tracker
-    start_uptime_tracker()
-
     from app.models import User, Role
     datastore = SQLAlchemyUserDatastore(db, User, Role)
     app.security = Security(app, datastore=datastore, register_blueprint=False) # Registering predefined blueprint is disabled
@@ -110,6 +112,24 @@ def create_app():
 
     # Register blueprints
     register_blueprints(app)
+
+    # Error handler
+    @app.errorhandler(Exception)
+    def handle_error(error):
+        logger.error(f"Unhandled error: {str(error)}")
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(error)
+        }), 500
+
+    # Initialize background tasks using with app.app_context()
+    with app.app_context():
+        from app.tasks import start_uptime_tracker
+        try:
+            start_uptime_tracker()
+            logger.info("Background tasks initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize background tasks: {e}")
 
     logger.info("App created successfully")
     

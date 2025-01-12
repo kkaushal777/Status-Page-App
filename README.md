@@ -100,6 +100,11 @@ npm run dev
 - `PUT /api/services/{id}`: Update service
 - `DELETE /api/services/{id}`: Delete service
 
+### Important Links
+
+- **Live Demo**: [Status Page App Demo](https://status-page-nine-indol.vercel.app/)
+- **Video Demo**: [Watch it](https://drive.google.com/drive/folders/1yeZNQtB6N2Ks4MlAiWVbFLE7E5GXc5RF)
+
 ## License
 
 MIT License

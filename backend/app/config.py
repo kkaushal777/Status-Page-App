@@ -17,8 +17,8 @@ class Config:
     
 
 class DevelopmentConfig(Config):
-    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/mydb'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///db.sqlite3'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://status_page_0rhp_user:i3vaqWEYT9AC5bMC0ihL00PY1LqGR3Y0@dpg-cu228a52ng1s73eh6tp0-a.oregon-postgres.render.com/status_page_0rhp'
+    # SQLALCHEMY_DATABASE_URI = 'sqlite:///db.sqlite3'
     SECRET_KEY = 'plivo123'
     SECURITY_PASSWORD_HASH = 'bcrypt'
     SECURITY_PASSWORD_SALT = 'plivoproject' 
@@ -28,6 +28,12 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
+    # Use Render's internal Postgres URL if available, fallback to SQLite
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3')
+    
+    # Fix potential "postgres://" to "postgresql://" in Render's URL
+    if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
 
 config = {
     'development': DevelopmentConfig,
