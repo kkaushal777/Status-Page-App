@@ -69,6 +69,19 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
     
+    # Configure CORS properly
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["https://status-page-nine-indol.vercel.app/"],
+            "supports_credentials": True
+        }
+    })
+    
+    # Configure Socket.IO
+    socketio.init_app(app, 
+                     cors_allowed_origins=["//https://status-page-nine-indol.vercel.app/"],
+                     async_mode='eventlet')
+    
     # Enable flash messages
     app.config['SESSION_TYPE'] = 'filesystem'
     
@@ -83,10 +96,6 @@ def create_app():
     # Initialize database with error handling
     init_db(app)
     jwt.init_app(app)
-    socketio.init_app(app)  # Initialize SocketIO with app
-
-    # Enable CORS
-    CORS(app)
 
     # Configure and initialize Flask-Mail
     app.config.update(
