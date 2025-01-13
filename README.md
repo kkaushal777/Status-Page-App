@@ -110,6 +110,11 @@ npm run dev
 ### Important Links
 
 - **Live Demo**: [Status Page App Demo](https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app/)
+- **Dummy Login**
+```bash
+Username : admin1@plivo.com
+passowrd : plivo123
+```
 - **Video Demo**: [Watch it](https://drive.google.com/drive/folders/1yeZNQtB6N2Ks4MlAiWVbFLE7E5GXc5RF)
 
 ## License
