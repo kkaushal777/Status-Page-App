@@ -110,6 +110,7 @@ npm run dev
 ### Important Links
 
 - **Live Demo**: [Status Page App Demo](https://status-page-ead5m5fip-kaushal-kishores-projects-b81830f3.vercel.app/)
+```Note: It might take 2-3 minutes for the application to load, as the free server may need to restart if it has been inactive.```
 - **Dummy Login**
 ```bash
 Username : admin1@plivo.com
